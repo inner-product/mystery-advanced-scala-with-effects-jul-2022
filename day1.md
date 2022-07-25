@@ -24,7 +24,7 @@ Brian: orchestration of Spark jobs.
 
 Netflix Genie: similar goals.
 Building REST APIs. Automate cloud stuff.
-
+Core data platform, hybrid cloud.
 
 ## Overview
 
@@ -200,3 +200,26 @@ Typelevel maintains Cats, Cats Effect
 - Cats is a play on "category theory" where a lot of the abstractions come from (monads, etc.)
 - Cats Effect came later. It's `IO` that works nicely with Cats.
 - typelevel.org
+
+Companion objects
+- A companion object is an object with the same name as a type and in the same file as that type
+- Conventionally used for constructors in Scala. Constructors are usually methods on companion objects.
+
+Call-by-name parameters
+- `def foo(x: Int)`. `x` is a normal parameter. Argument is evaluated before the method is called.
+- `def foo(x: => Int)`. `x` is a *call-by-name* parameter. Argument is evaluated when it is referred to within the body of the method.
+
+
+## Feedback
+
+- Material at the right pace: Jerry, Brian, Taylor, Alex
+- Juan, going ok.
+
+- Monoids, monads, option, either
+- Resources 
+- Logging (carrying token with IO)
+- Tagless final vs IO
+  - Abstracting over effect type
+- Building scalable / streaming systems
+
+Cats Effect 2 and 3
