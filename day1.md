@@ -223,3 +223,137 @@ Call-by-name parameters
 - Building scalable / streaming systems
 
 Cats Effect 2 and 3
+
+
+
+```scala
+package io
+
+import cats.syntax.all._
+import cats.effect._
+
+// The goal of these exercises is to introduce some of the basics of using IO:
+//
+// - constructing IO
+// - doing one thing after another (sequencing)
+// - combining multiple independent IOs
+//
+// and additionally get to the fundamental design principle of IO: the
+// separation between descrptions and action
+object Basics extends IOApp.Simple {
+  // 0. This object extends IOApp.Simple. This allows us to run the object. It
+  // expects an IO with the name `run` which describes the program it will run.
+  // So replace `run` below with whatever you want to see your programs in
+  // action.
+  // 1. You can create an IO using IO(...) and IO.pure(...). (The former is the
+  // apply method on the IO companion object, so can also be written as
+  // IO.apply(...))
+  //
+  // What is the difference between these methods? Can you write a program that
+  // demonstrates the difference?
+  println("Construction in progress")
+  val pureExample = IO.pure(println("Hello1"))
+  val applyExample = IO(println("Hello2"))
+  println("Constructed IOs")
+
+  // val run = pureExample //IO.apply(println("Hello!"))
+  val run = applyExample
+  // 2. flatMap allows us to do one thing after another, where the thing we do
+  // second depends on the result of the thing we do first.
+  //
+  // IO.realTime gives the time since the start of the epoch. Using flatMap
+  // write an IO that gets the time and prints it on the console.
+  def printRealTime: IO[Unit] =
+    IO.realTime.flatMap(time => IO.println(time))
+
+  def printRealTime2: IO[Unit] =
+    IO.realTime.flatMap { time => IO.println(time) }
+
+  // {} and () around a method body mean the same thing
+  // within {} can put multiple expressions and declarations
+  // IO.realTime.flatMap { time =>
+  //   val now = time // a declaration
+  //   IO.println(now)
+  // }
+  // Can't do this within ()
+  //
+  // Can also write a partial function (function of a single argument with a
+  // pattern match on that argument) within {}
+  //
+  // val aTuple = (1, 2)
+  // Option(aTuple).map{ case (a, b) => a + b }
+  // Option(aTuple).map(t => t._1 + t._2) // Yuck!
+
+  // IO[FiniteDuration].flatMap(FiniteDuration => IO[Unit]): IO[Unit]
+  // IO[A].flatMap(A => IO[B]): IO[B]
+  // F[A].flatMap(A => F[B]): F[B]
+  // F[A].map(A => B): F[B]
+  // Similar to `then` on Promise in JS (but then is a bit weird)
+
+  // List[A].reduce((B, A) => B): B
+  // IO.realTime.flatMap(...).flatMap(...)
+
+  // 3. mapN allows us to combine two or more IOs that don't depend on each
+  // other. Here's an example:
+  //
+  // (IO(1), IO(2)).mapN((x, y) => x + y)
+  //
+  // When this program is run, are the IOs always evaluated in a particular
+  // order (e.g. left to right) or is it non-deterministic?
+  //
+  // Type class coherence
+  for {
+    x <- IO(1)
+    y <- IO(2)
+  } yield x + y
+
+  IO(1).flatMap(x => IO(2).map(y => x + y))
+
+  (IO(1), IO(2)).mapN((a, b) => a + b)
+
+  (IO(1), IO(2)).parMapN(_ + _)
+
+  // 4. The following program attempts to add logging before and after an IO
+  // runs. Does it do this correctly?
+  def log[A](io: IO[A]): Unit = {
+    println("Starting the IO")
+    val _ = io
+    println("Ending the IO")
+  }
+  log(IO("Example"))
+
+  def double(x: Int): Int = x + x
+  double({ println("Hello 1!"); 1 + 2 })
+
+  def doubleCallByName(x: => Int): Int = x + x
+  doubleCallByName({ println("Hello 2!"); 1 + 2 })
+
+  // 5. Write a method that adds logging before and after an IO
+  def correctLog[A](io: IO[A]): IO[A] = {
+    val start = IO.println("Starting the IO")
+    val end = IO.println("Ending the IO")
+
+    for {
+      _ <- start
+      a <- io
+      _ <- end
+    } yield a
+
+    // a <- F[A] (gets a value out of an F[A]; becomes a flatMap or map)
+    // a = A (introduces a new "variable" or name)
+
+    start.flatMap(_ => io.flatMap(a => end.flatMap(_ => IO.pure(a))))
+
+    start *> io <* end
+
+    (start, io, end).mapN((_, a, _) => a)
+  }
+
+  (Option(1), Option(2), Option(3)).mapN((a, b, c) => a + b + c)
+  // Generalize to unknown number of elements (with same type) as sequence and traverse
+
+  // 6. What do the *> and <* methods do? Could you use them in the logging
+  // method you just wrote?
+
+}
+```
